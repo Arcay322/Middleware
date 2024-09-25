@@ -19,6 +19,20 @@ def buscar_saludo_por_id():
         print("Por favor, ingresa un ID válido.")
         return None
 
+def procesar_respuesta(response):
+    if response and response.status_code == 200:
+        saludos = response.json().get("saludos", [])
+        if saludos:
+            for saludo in saludos:
+                # Usamos las claves para acceder a los datos del saludo
+                print(f"ID: {saludo['id']}, Nombre: {saludo['nombre']}, Apellido: {saludo['apellido']}, Edad: {saludo['edad']}, Saludo: {saludo['saludo']}")
+        else:
+            print("No se encontraron saludos para los criterios proporcionados.")
+    elif response:
+        print(f"Ocurrió un error: {response.status_code} - {response.text}")
+    else:
+        print("No se encontraron saludos para los datos proporcionados.")
+
 def main():
     while True:
         print("\nMenú de Opciones:")
@@ -42,16 +56,8 @@ def main():
             print("Opción no válida. Por favor, elige una opción entre 1 y 4.")
             continue
 
-        if response and response.status_code == 200:
-            saludos = response.json()["saludos"]
-            if saludos:
-                for saludo in saludos:
-                    # Cambiado para usar claves en lugar de índices
-                    print(f"ID: {saludo['id']}, Nombre: {saludo['nombre']}, Apellido: {saludo['apellido']}, Edad: {saludo['edad']}, Saludo: {saludo['saludo']}")
-            else:
-                print("No se encontraron saludos para los criterios proporcionados.")
-        elif response:
-            print(f"Ocurrió un error: {response.status_code} - {response.text}")
+        # Procesar la respuesta
+        procesar_respuesta(response)
 
         # Preguntar al usuario si desea buscar otro saludo
         otra_busqueda = input("\n¿Deseas buscar otro saludo? (s/n): ").strip().lower()

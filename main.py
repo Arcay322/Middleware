@@ -2,20 +2,6 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import sqlite3
 
-# Crear la base de datos y tabla
-conn = sqlite3.connect("saludos.db", check_same_thread=False)  # Asegurarse de que la conexión sea segura
-cursor = conn.cursor()
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS saludos (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nombre TEXT,
-    apellido TEXT,
-    edad INTEGER,
-    saludo TEXT
-)
-""")
-conn.commit()
-
 
 # Modelo de datos
 class Saludo(BaseModel):
@@ -27,27 +13,63 @@ class Saludo(BaseModel):
 app = FastAPI()
 
 
+# Crear la base de datos y tabla si no existe
+def init_db():
+    conn = sqlite3.connect("saludos.db", check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS saludos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT,
+        apellido TEXT,
+        edad INTEGER,
+        saludo TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
+
+
+# Llamar a init_db al iniciar la aplicación
+init_db()
+
+
 # Endpoint para recibir el saludo
 @app.post("/saludar/")
 async def saludar(saludo: Saludo):
     mensaje = f"Hola, {saludo.nombre} {saludo.apellido}! Tienes {saludo.edad} años."
 
     try:
+        # Conectar a la base de datos
+        conn = sqlite3.connect("saludos.db", check_same_thread=False)
+        cursor = conn.cursor()
+
         # Guardar en la base de datos
         cursor.execute("INSERT INTO saludos (nombre, apellido, edad, saludo) VALUES (?, ?, ?, ?)",
                        (saludo.nombre, saludo.apellido, saludo.edad, mensaje))
         conn.commit()
+
         return {"mensaje": mensaje}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()  # Cerrar la conexión
 
 
 # Endpoint para ver todos los saludos almacenados
 @app.get("/saludos/")
 async def obtener_saludos():
-    cursor.execute("SELECT * FROM saludos")
-    resultados = cursor.fetchall()
-    return {"saludos": resultados}
+    try:
+        # Conectar a la base de datos
+        conn = sqlite3.connect("saludos.db", check_same_thread=False)
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT * FROM saludos")
+        resultados = cursor.fetchall()
+
+        return {"saludos": resultados}
+    finally:
+        conn.close()  # Cerrar la conexión
 
 
 # Endpoint para buscar saludos por nombre
@@ -66,10 +88,17 @@ async def buscar_saludos(nombre: str = None, apellido: str = None, id: int = Non
         query += " AND id = ?"
         parameters.append(id)
 
-    cursor.execute(query, parameters)
-    resultados = cursor.fetchall()
+    try:
+        # Conectar a la base de datos
+        conn = sqlite3.connect("saludos.db", check_same_thread=False)
+        cursor = conn.cursor()
 
-    if not resultados:
-        raise HTTPException(status_code=404, detail="No se encontraron saludos para los criterios proporcionados")
+        cursor.execute(query, parameters)
+        resultados = cursor.fetchall()
 
-    return {"saludos": resultados}
+        if not resultados:
+            raise HTTPException(status_code=404, detail="No se encontraron saludos para los criterios proporcionados")
+
+        return {"saludos": resultados}
+    finally:
+        conn.close()  # Cerrar la conexión

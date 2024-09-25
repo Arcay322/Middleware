@@ -77,7 +77,7 @@ async def obtener_saludos(request: Request):
 
 # Endpoint para buscar saludos por nombre, apellido o ID
 @app.get("/buscar_saludos/", response_class=HTMLResponse)
-async def buscar_saludos(request: Request, nombre: str = None, apellido: str = None, id: int = None):
+async def buscar_saludos(request: Request, nombre: str = None, apellido: str = None, id: str = None):
     query = "SELECT * FROM saludos WHERE 1=1"
     parameters = []
 
@@ -88,7 +88,7 @@ async def buscar_saludos(request: Request, nombre: str = None, apellido: str = N
     if apellido:
         query += " AND apellido = ?"
         parameters.append(apellido)
-    if id is not None:  # Solo agregar el ID a la consulta si no es None
+    if id is not None and id != "":  # Solo agregar el ID a la consulta si no es None o vacío
         query += " AND id = ?"
         parameters.append(id)
 

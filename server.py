@@ -1,4 +1,6 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request, Depends
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 import sqlite3
 
@@ -9,6 +11,9 @@ class Saludo(BaseModel):
     edad: int
 
 app = FastAPI()
+
+# Configuración de plantillas
+templates = Jinja2Templates(directory="templates")
 
 # Crear la base de datos y tabla si no existe
 def init_db():
@@ -29,12 +34,10 @@ def init_db():
 # Llamar a init_db al iniciar la aplicación
 init_db()
 
-# Endpoint para la ruta raíz
-@app.get("/")
-async def read_root():
-    return ("Bienvenido a la Aplicación de Saludos.\n"
-            "Por favor, ingresa tu nombre, apellido y edad usando el cliente.\n"
-            "Puedes acceder a la función de saludar utilizando el endpoint /saludar/.")
+# Endpoint para la ruta raíz que sirve el HTML
+@app.get("/", response_class=HTMLResponse)
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request})
 
 # Endpoint para recibir el saludo
 @app.post("/saludar/")
@@ -58,8 +61,8 @@ async def saludar(saludo: Saludo):
         conn.close()  # Cerrar la conexión
 
 # Endpoint para ver todos los saludos almacenados
-@app.get("/saludos/")
-async def obtener_saludos():
+@app.get("/saludos/", response_class=HTMLResponse)
+async def obtener_saludos(request: Request):
     try:
         # Conectar a la base de datos
         conn = sqlite3.connect("saludos.db", check_same_thread=False)
@@ -68,13 +71,13 @@ async def obtener_saludos():
         cursor.execute("SELECT * FROM saludos")
         resultados = cursor.fetchall()
 
-        return {"saludos": resultados}
+        return templates.TemplateResponse("ver_saludos.html", {"request": request, "saludos": resultados})
     finally:
         conn.close()  # Cerrar la conexión
 
 # Endpoint para buscar saludos por nombre, apellido o ID
-@app.get("/buscar_saludos/")
-async def buscar_saludos(nombre: str = None, apellido: str = None, id: int = None):
+@app.get("/buscar_saludos/", response_class=HTMLResponse)
+async def buscar_saludos(request: Request, nombre: str = None, apellido: str = None, id: int = None):
     query = "SELECT * FROM saludos WHERE 1=1"
     parameters = []
 
@@ -99,11 +102,11 @@ async def buscar_saludos(nombre: str = None, apellido: str = None, id: int = Non
         if not resultados:
             raise HTTPException(status_code=404, detail="No se encontraron saludos para los criterios proporcionados")
 
-        return {"saludos": resultados}
+        return templates.TemplateResponse("ver_saludos.html", {"request": request, "saludos": resultados})
     finally:
         conn.close()  # Cerrar la conexión
 
 # Usa Uvicorn para servir la aplicación
-if __name__ == "__server__":
+if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

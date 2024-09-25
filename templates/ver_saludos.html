@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ver Salud</title>
+</head>
+<body>
+    <h1>Lista de Salud</h1>
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Apellido</th>
+            <th>Edad</th>
+            <th>Saludo</th>
+        </tr>
+        {% for saludo in saludos %}
+        <tr>
+            <td>{{ saludo[0] }}</td>
+            <td>{{ saludo[1] }}</td>
+            <td>{{ saludo[2] }}</td>
+            <td>{{ saludo[3] }}</td>
+            <td>{{ saludo[4] }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+    <a href="/">Regresar</a>
+</body>
+</html>

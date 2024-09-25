@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplicación de Saludos</title>
+</head>
+<body>
+    <h1>Bienvenido a la Aplicación de Saludos</h1>
+    <h2>Generar Saludo</h2>
+    <form action="/saludar/" method="post">
+        <input type="text" name="nombre" placeholder="Nombre" required>
+        <input type="text" name="apellido" placeholder="Apellido" required>
+        <input type="number" name="edad" placeholder="Edad" required>
+        <button type="submit">Enviar Saludo</button>
+    </form>
+
+    <h2>Ver Todos los Salud</h2>
+    <a href="/saludos/">Ver Salud</a>
+
+    <h2>Buscar Saludo</h2>
+    <form action="/buscar_saludos/" method="get">
+        <input type="text" name="nombre" placeholder="Nombre">
+        <input type="text" name="apellido" placeholder="Apellido">
+        <input type="number" name="id" placeholder="ID">
+        <button type="submit">Buscar</button>
+    </form>
+</body>
+</html>

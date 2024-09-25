@@ -1,9 +1,14 @@
 from fastapi import FastAPI, HTTPException, Form
+from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import List, Optional
 import sqlite3
 
 app = FastAPI()
+
+# Montar la carpeta "static" para archivos CSS y JS si es necesario
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 # Conexión a la base de datos SQLite
@@ -51,14 +56,52 @@ async def saludar(nombre: str = Form(...), apellido: str = Form(...), edad: int 
     return {"id": id, "nombre": nombre, "apellido": apellido, "edad": edad, "saludo": saludo}
 
 
-@app.get("/ver_saludos/", response_model=List[Saludo])
+@app.get("/", response_class=HTMLResponse)
+async def read_root():
+    return """
+    <html>
+        <head>
+            <title>Saludar</title>
+        </head>
+        <body>
+            <h1>Enviar Saludo</h1>
+            <form action="/saludar/" method="post">
+                <label>Nombre: <input type="text" name="nombre" required></label><br>
+                <label>Apellido: <input type="text" name="apellido" required></label><br>
+                <label>Edad: <input type="number" name="edad" required></label><br>
+                <button type="submit">Enviar Saludo</button>
+            </form>
+            <h1>Opciones</h1>
+            <a href="/ver_saludos">Ver Saludos</a><br>
+            <a href="/buscar_saludos">Buscar Saludos</a>
+        </body>
+    </html>
+    """
+
+
+@app.get("/ver_saludos/", response_class=HTMLResponse)
 async def ver_saludos():
     with get_db_connection() as conn:
         saludos = conn.execute('SELECT * FROM saludos').fetchall()
-        return [dict(saludo) for saludo in saludos]
+        saludos_list = "".join(
+            f"<p>ID: {saludo['id']}, Nombre: {saludo['nombre']}, Apellido: {saludo['apellido']}, Edad: {saludo['edad']}, Saludo: {saludo['saludo']}</p>"
+            for saludo in saludos
+        )
+        return f"""
+        <html>
+            <head>
+                <title>Ver Saludos</title>
+            </head>
+            <body>
+                <h1>Saludos Almacenados</h1>
+                {saludos_list if saludos else "<p>No hay saludos almacenados.</p>"}
+                <a href="/">Regresar</a>
+            </body>
+        </html>
+        """
 
 
-@app.get("/buscar_saludos/", response_model=List[Saludo])
+@app.get("/buscar_saludos/", response_class=HTMLResponse)
 async def buscar_saludos(nombre: Optional[str] = None, apellido: Optional[str] = None, id: Optional[int] = None):
     query = "SELECT * FROM saludos WHERE 1=1"
     params = []
@@ -76,5 +119,17 @@ async def buscar_saludos(nombre: Optional[str] = None, apellido: Optional[str] =
     with get_db_connection() as conn:
         saludos = conn.execute(query, params).fetchall()
         if not saludos:
-            raise HTTPException(status_code=404, detail="No se encontraron saludos para los criterios proporcionados.")
-        return [dict(saludo) for saludo in saludos]
+            return f"""
+            <html>
+                <head>
+                    <title>Buscar Saludos</title>
+                </head>
+                <body>
+                    <h1>No se encontraron saludos para los criterios proporcionados.</h1>
+                    <a href="/">Regresar</a>
+                </body>
+            </html>
+            """
+        else:
+            saludos_list = "".join(
+                f"<p>ID: {saludo['id']}, Nombre: {saludo['nombre']

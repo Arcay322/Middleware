@@ -16,7 +16,7 @@ while True:
         print("Por favor, ingrese un número válido para la edad.")
 
 # Hacer una solicitud POST al endpoint de saludar
-response = requests.post("http://127.0.0.1:8000/saludar/", json={"nombre": nombre, "apellido": apellido, "edad": edad})
+response = requests.post("https://middleware-vl7h.onrender.com/saludar/", json={"nombre": nombre, "apellido": apellido, "edad": edad})
 
 # Verificar si la solicitud fue exitosa
 if response.status_code == 200:

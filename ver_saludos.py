@@ -1,7 +1,7 @@
 import requests
 
 # Hacer una solicitud GET para obtener todos los saludos
-response = requests.get("http://127.0.0.1:8000/saludos/")
+response = requests.get("https://middleware-vl7h.onrender.com/saludos/")
 
 if response.status_code == 200:
     saludos = response.json()["saludos"]

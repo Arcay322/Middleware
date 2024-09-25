@@ -46,7 +46,8 @@ def main():
             saludos = response.json()["saludos"]
             if saludos:
                 for saludo in saludos:
-                    print(f"ID: {saludo[0]}, Nombre: {saludo[1]}, Apellido: {saludo[2]}, Edad: {saludo[3]}, Saludo: {saludo[4]}")
+                    # Cambiado para usar claves en lugar de índices
+                    print(f"ID: {saludo['id']}, Nombre: {saludo['nombre']}, Apellido: {saludo['apellido']}, Edad: {saludo['edad']}, Saludo: {saludo['saludo']}")
             else:
                 print("No se encontraron saludos para los criterios proporcionados.")
         elif response:
@@ -60,4 +61,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

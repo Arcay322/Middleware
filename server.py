@@ -34,6 +34,12 @@ def init_db():
 init_db()
 
 
+# Endpoint para la ruta raíz
+@app.get("/")
+async def read_root():
+    return {"message": "Bienvenido a la API de saludos. Usa /saludar/ para enviar un saludo y /saludos/ para ver todos los saludos almacenados."}
+
+
 # Endpoint para recibir el saludo
 @app.post("/saludar/")
 async def saludar(saludo: Saludo):
@@ -106,4 +112,4 @@ async def buscar_saludos(nombre: str = None, apellido: str = None, id: int = Non
 # Usa Uvicorn para servir la aplicación
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+    uvicorn.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))  # Usa el puerto definido por Render

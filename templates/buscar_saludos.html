@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscar Saludos</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Buscar Saludos</h1>
+        <form action="/buscar_saludos" method="get">
+            <label for="criterio">Selecciona el criterio de búsqueda:</label><br>
+            <select name="criterio" id="criterio" required>
+                <option value="nombre">Por Nombre</option>
+                <option value="apellido">Por Apellido</option>
+                <option value="id">Por ID</option>
+            </select>
+            <br><br>
+            <label for="valor">Ingresa el valor a buscar:</label><br>
+            <input type="text" id="valor" name="valor" required>
+            <br><br>
+            <button type="submit">Buscar</button>
+        </form>
+        <br>
+        <div>
+            <h2>Resultados de la búsqueda:</h2>
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nombre</th>
+                        <th>Apellido</th>
+                        <th>Edad</th>
+                        <th>Saludo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if saludos %}
+                    {% for saludo in saludos %}
+                    <tr>
+                        <td>{{ saludo.id }}</td>
+                        <td>{{ saludo.nombre }}</td>
+                        <td>{{ saludo.apellido }}</td>
+                        <td>{{ saludo.edad }}</td>
+                        <td>{{ saludo.saludo }}</td>
+                    </tr>
+                    {% endfor %}
+                    {% else %}
+                    <tr>
+                        <td colspan="5">No se encontraron saludos</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+        <br>
+        <a href="/">Volver al inicio</a>
+    </div>
+</body>
+</html>
+

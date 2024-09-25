@@ -1,69 +1,24 @@
-import requests
+from fastapi import FastAPI, Request, Depends
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+from fastapi import Form
 
-def buscar_saludo_por_nombre():
-    nombre = input("¿Cuál es el nombre que deseas buscar? ")
-    response = requests.get(f"https://middleware-vl7h.onrender.com/buscar_saludos/", params={"nombre": nombre})
-    return response
+app = FastAPI()
+templates = Jinja2Templates(directory="templates")
 
-def buscar_saludo_por_apellido():
-    apellido = input("¿Cuál es el apellido que deseas buscar? ")
-    response = requests.get(f"https://middleware-vl7h.onrender.com/buscar_saludos/", params={"apellido": apellido})
-    return response
 
-def buscar_saludo_por_id():
-    id_input = input("¿Cuál es el ID que deseas buscar? ")
-    if id_input.isdigit():  # Verifica que sea un número
-        response = requests.get(f"https://middleware-vl7h.onrender.com/buscar_saludos/", params={"id": int(id_input)})
-        return response
-    else:
-        print("Por favor, ingresa un ID válido.")
-        return None
+@app.get("/buscar_saludos", response_class=HTMLResponse)
+async def buscar_saludos(request: Request, criterio: str = None, valor: str = None):
+    saludos = []
 
-def procesar_respuesta(response):
-    if response and response.status_code == 200:
-        saludos = response.json().get("saludos", [])
-        if saludos:
-            for saludo in saludos:
-                # Usamos las claves para acceder a los datos del saludo
-                print(f"ID: {saludo['id']}, Nombre: {saludo['nombre']}, Apellido: {saludo['apellido']}, Edad: {saludo['edad']}, Saludo: {saludo['saludo']}")
+    if criterio and valor:
+        # Hacer una solicitud GET para buscar saludos según el criterio
+        params = {criterio: valor}
+        response = requests.get("https://middleware-vl7h.onrender.com/buscar_saludos/", params=params)
+
+        if response.status_code == 200:
+            saludos = response.json().get("saludos", [])
         else:
-            print("No se encontraron saludos para los criterios proporcionados.")
-    elif response:
-        print(f"Ocurrió un error: {response.status_code} - {response.text}")
-    else:
-        print("No se encontraron saludos para los datos proporcionados.")
+            saludos = []  # En caso de error, establecer saludos como una lista vacía
 
-def main():
-    while True:
-        print("\nMenú de Opciones:")
-        print("1. Buscar saludo por nombre")
-        print("2. Buscar saludo por apellido")
-        print("3. Buscar saludo por ID")
-        print("4. Salir")
-
-        opcion = input("Elige una opción (1-4): ")
-
-        if opcion == "1":
-            response = buscar_saludo_por_nombre()
-        elif opcion == "2":
-            response = buscar_saludo_por_apellido()
-        elif opcion == "3":
-            response = buscar_saludo_por_id()
-        elif opcion == "4":
-            print("Saliendo...")
-            break
-        else:
-            print("Opción no válida. Por favor, elige una opción entre 1 y 4.")
-            continue
-
-        # Procesar la respuesta
-        procesar_respuesta(response)
-
-        # Preguntar al usuario si desea buscar otro saludo
-        otra_busqueda = input("\n¿Deseas buscar otro saludo? (s/n): ").strip().lower()
-        if otra_busqueda != 's':
-            print("Saliendo...")
-            break
-
-if __name__ == "__main__":
-    main()
+    return templates.TemplateResponse("buscar_saludos.html", {"request": request, "saludos": saludos})

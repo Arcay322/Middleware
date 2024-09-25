@@ -28,12 +28,17 @@ async def read_root(request):
 
 
 @app.post("/saludar/")
-async def saludar(nombre: str = Form(...), apellido: str = Form(...), edad: int = Form(...)):
+async def saludar(
+        request: HTMLResponse,
+        nombre: str = Form(...),
+        apellido: str = Form(...),
+        edad: int = Form(...)
+):
     global current_id
     nuevo_saludo = Saludo(id=current_id, nombre=nombre, apellido=apellido, edad=edad)
     saludos_db.append(nuevo_saludo)
     current_id += 1
-    return f"Hola, {nombre} {apellido}! Tienes {edad} años."
+    return {"mensaje": f"Hola, {nombre} {apellido}! Tienes {edad} años."}
 
 
 @app.get("/saludos/", response_model=List[Saludo])

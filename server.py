@@ -1,53 +1,80 @@
-from fastapi import FastAPI, Request, Form
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
-import sqlite3
+from fastapi import FastAPI, HTTPException, Form
 from pydantic import BaseModel
+from typing import List, Optional
+import sqlite3
 
 app = FastAPI()
-templates = Jinja2Templates(directory="templates")
 
-# Modelo de datos
-class Saludo(BaseModel):
-    nombre: str
-    apellido: str
-    edad: int
 
-# Crear la base de datos y tabla si no existe
+# Conexión a la base de datos SQLite
+def get_db_connection():
+    conn = sqlite3.connect('saludos.db')
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+# Crear la tabla si no existe
 def init_db():
-    conn = sqlite3.connect("saludos.db", check_same_thread=False)
-    cursor = conn.cursor()
-    cursor.execute(""" 
-    CREATE TABLE IF NOT EXISTS saludos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT,
-        apellido TEXT,
-        edad INTEGER,
-        saludo TEXT
-    )
-    """)
-    conn.commit()
-    conn.close()
+    with get_db_connection() as conn:
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS saludos (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                nombre TEXT NOT NULL,
+                apellido TEXT NOT NULL,
+                edad INTEGER NOT NULL,
+                saludo TEXT NOT NULL
+            )
+        ''')
+        conn.commit()
+
 
 init_db()
 
-# Ruta para servir la interfaz
-@app.get("/", response_class=HTMLResponse)
-async def leer_interfaz(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
 
-# Endpoint para recibir el saludo desde el formulario
-@app.post("/saludar")
-async def saludar_desde_formulario(nombre: str = Form(...), apellido: str = Form(...), edad: int = Form(...)):
-    mensaje = f"Hola, {nombre} {apellido}! Tienes {edad} años."
-    try:
-        conn = sqlite3.connect("saludos.db", check_same_thread=False)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO saludos (nombre, apellido, edad, saludo) VALUES (?, ?, ?, ?)",
-                       (nombre, apellido, edad, mensaje))
+class Saludo(BaseModel):
+    id: int
+    nombre: str
+    apellido: str
+    edad: int
+    saludo: str
+
+
+@app.post("/saludar/", response_model=Saludo)
+async def saludar(nombre: str = Form(...), apellido: str = Form(...), edad: int = Form(...)):
+    saludo = f"Hola, {nombre} {apellido}!"
+    with get_db_connection() as conn:
+        cursor = conn.execute('INSERT INTO saludos (nombre, apellido, edad, saludo) VALUES (?, ?, ?, ?)',
+                              (nombre, apellido, edad, saludo))
         conn.commit()
-        return {"mensaje": mensaje}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
+        id = cursor.lastrowid
+
+    return {"id": id, "nombre": nombre, "apellido": apellido, "edad": edad, "saludo": saludo}
+
+
+@app.get("/ver_saludos/", response_model=List[Saludo])
+async def ver_saludos():
+    with get_db_connection() as conn:
+        saludos = conn.execute('SELECT * FROM saludos').fetchall()
+        return [dict(saludo) for saludo in saludos]
+
+
+@app.get("/buscar_saludos/", response_model=List[Saludo])
+async def buscar_saludos(nombre: Optional[str] = None, apellido: Optional[str] = None, id: Optional[int] = None):
+    query = "SELECT * FROM saludos WHERE 1=1"
+    params = []
+
+    if nombre:
+        query += " AND nombre = ?"
+        params.append(nombre)
+    if apellido:
+        query += " AND apellido = ?"
+        params.append(apellido)
+    if id is not None:
+        query += " AND id = ?"
+        params.append(id)
+
+    with get_db_connection() as conn:
+        saludos = conn.execute(query, params).fetchall()
+        if not saludos:
+            raise HTTPException(status_code=404, detail="No se encontraron saludos para los criterios proporcionados.")
+        return [dict(saludo) for saludo in saludos]

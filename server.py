@@ -1,62 +1,112 @@
-from fastapi import FastAPI, Form
+from fastapi import FastAPI, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from fastapi import Request
+from pydantic import BaseModel
 import sqlite3
+
+# Modelo de datos
+class Saludo(BaseModel):
+    nombre: str
+    apellido: str
+    edad: int
 
 app = FastAPI()
 
-# Configuración para servir archivos estáticos y plantillas
-app.mount("/static", StaticFiles(directory="static"), name="static")
+# Configuración de plantillas
 templates = Jinja2Templates(directory="templates")
 
-# Conexión a la base de datos SQLite
-def get_db_connection():
-    conn = sqlite3.connect('saludos.db')
-    conn.row_factory = sqlite3.Row
-    return conn
+# Crear la base de datos y tabla si no existe
+def init_db():
+    conn = sqlite3.connect("saludos.db", check_same_thread=False)
+    cursor = conn.cursor()
+    cursor.execute(""" 
+    CREATE TABLE IF NOT EXISTS saludos (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT,
+        apellido TEXT,
+        edad INTEGER,
+        saludo TEXT
+    )
+    """)
+    conn.commit()
+    conn.close()
 
+# Llamar a init_db al iniciar la aplicación
+init_db()
+
+# Endpoint para la ruta raíz que sirve el HTML
 @app.get("/", response_class=HTMLResponse)
 async def read_root(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
 
+# Endpoint para recibir el saludo
 @app.post("/saludar/")
-async def saludar(nombre: str = Form(...), apellido: str = Form(...), edad: int = Form(...)):
-    conn = get_db_connection()
-    conn.execute("INSERT INTO saludos (nombre, apellido, edad) VALUES (?, ?, ?)",
-                 (nombre, apellido, edad))
-    conn.commit()
-    conn.close()
-    return {"mensaje": f"Saludo enviado a {nombre} {apellido}!"}
+async def saludar(saludo: Saludo):
+    mensaje = f"Hola, {saludo.nombre} {saludo.apellido}! Tienes {saludo.edad} años."
 
+    try:
+        # Conectar a la base de datos
+        conn = sqlite3.connect("saludos.db", check_same_thread=False)
+        cursor = conn.cursor()
+
+        # Guardar en la base de datos
+        cursor.execute("INSERT INTO saludos (nombre, apellido, edad, saludo) VALUES (?, ?, ?, ?)",
+                       (saludo.nombre, saludo.apellido, saludo.edad, mensaje))
+        conn.commit()
+
+        return {"mensaje": mensaje}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    finally:
+        conn.close()  # Cerrar la conexión
+
+# Endpoint para ver todos los saludos almacenados
 @app.get("/saludos/", response_class=HTMLResponse)
-async def ver_saludos(request: Request):
-    conn = get_db_connection()
-    saludos = conn.execute("SELECT * FROM saludos").fetchall()
-    conn.close()
-    return templates.TemplateResponse("ver_saludos.html", {"request": request, "saludos": saludos})
+async def obtener_saludos(request: Request):
+    try:
+        # Conectar a la base de datos
+        conn = sqlite3.connect("saludos.db", check_same_thread=False)
+        cursor = conn.cursor()
 
-@app.get("/buscar_saludos/")
-async def buscar_saludos(nombre: str = "", apellido: str = "", id: int = None):
-    conn = get_db_connection()
+        cursor.execute("SELECT * FROM saludos")
+        resultados = cursor.fetchall()
+
+        return templates.TemplateResponse("ver_saludos.html", {"request": request, "saludos": resultados})
+    finally:
+        conn.close()  # Cerrar la conexión
+
+# Endpoint para buscar saludos por nombre, apellido o ID
+@app.get("/buscar_saludos/", response_class=HTMLResponse)
+async def buscar_saludos(request: Request, nombre: str = None, apellido: str = None, id: int = None):
     query = "SELECT * FROM saludos WHERE 1=1"
-    params = []
+    parameters = []
 
     if nombre:
         query += " AND nombre = ?"
-        params.append(nombre)
+        parameters.append(nombre)
     if apellido:
         query += " AND apellido = ?"
-        params.append(apellido)
+        parameters.append(apellido)
     if id is not None:
         query += " AND id = ?"
-        params.append(id)
+        parameters.append(id)
 
-    saludos = conn.execute(query, params).fetchall()
-    conn.close()
-    return {"saludos": saludos}
+    try:
+        # Conectar a la base de datos
+        conn = sqlite3.connect("saludos.db", check_same_thread=False)
+        cursor = conn.cursor()
 
+        cursor.execute(query, parameters)
+        resultados = cursor.fetchall()
+
+        if not resultados:
+            raise HTTPException(status_code=404, detail="No se encontraron saludos para los criterios proporcionados")
+
+        return templates.TemplateResponse("ver_saludos.html", {"request": request, "saludos": resultados})
+    finally:
+        conn.close()  # Cerrar la conexión
+
+# Usa Uvicorn para servir la aplicación
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

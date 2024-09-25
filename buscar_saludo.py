@@ -19,9 +19,9 @@ def buscar_saludo_por_id():
         print("Por favor, ingresa un ID válido.")
         return None
 
-def main():
+def main_busqueda():
     while True:
-        print("\nMenú de Opciones:")
+        print("\nMenú de Opciones de Búsqueda:")
         print("1. Buscar saludo por nombre")
         print("2. Buscar saludo por apellido")
         print("3. Buscar saludo por ID")
@@ -60,5 +60,4 @@ def main():
             break
 
 if __name__ == "__main__":
-    main()
-
+    main_busqueda()

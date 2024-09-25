@@ -32,7 +32,9 @@ init_db()
 # Endpoint para la ruta raíz
 @app.get("/")
 async def read_root():
-    return {"message": "¡Bienvenido a la API de saludos!"}
+    return ("Bienvenido a la Aplicación de Saludos.\n"
+            "Por favor, ingresa tu nombre, apellido y edad usando el cliente.\n"
+            "Puedes acceder a la función de saludar utilizando el endpoint /saludar/.")
 
 # Endpoint para recibir el saludo
 @app.post("/saludar/")

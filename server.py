@@ -1,7 +1,14 @@
 from fastapi import FastAPI, HTTPException, Request, Form
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel
 import sqlite3
+
+# Modelo de datos
+class Saludo(BaseModel):
+    nombre: str
+    apellido: str
+    edad: int
 
 app = FastAPI()
 
@@ -70,7 +77,7 @@ async def obtener_saludos(request: Request):
 
 # Endpoint para buscar saludos por nombre, apellido o ID
 @app.get("/buscar_saludos/", response_class=HTMLResponse)
-async def buscar_saludos(request: Request, nombre: str = None, apellido: str = None, id: int = None):
+async def buscar_saludos(request: Request, nombre: str = None, apellido: str = None, id: str = None):
     query = "SELECT * FROM saludos WHERE 1=1"
     parameters = []
 
@@ -80,9 +87,9 @@ async def buscar_saludos(request: Request, nombre: str = None, apellido: str = N
     if apellido:
         query += " AND apellido = ?"
         parameters.append(apellido)
-    if id is not None:
+    if id is not None and id.isdigit():  # Asegurarse de que id sea un número si se proporciona
         query += " AND id = ?"
-        parameters.append(id)
+        parameters.append(int(id))  # Convertir a entero
 
     try:
         # Conectar a la base de datos

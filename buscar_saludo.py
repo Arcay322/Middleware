@@ -1,27 +1,23 @@
 import requests
 
-
 def buscar_saludo_por_nombre():
     nombre = input("¿Cuál es el nombre que deseas buscar? ")
-    response = requests.get(f"http://Arcay.pythonanywhere.com/saludos/", params={"nombre": nombre})
+    response = requests.get(f"http://127.0.0.1:8000/buscar_saludos/", params={"nombre": nombre})
     return response
-
 
 def buscar_saludo_por_apellido():
     apellido = input("¿Cuál es el apellido que deseas buscar? ")
-    response = requests.get(f"http://Arcay.pythonanywhere.com/saludos/", params={"apellido": apellido})
+    response = requests.get(f"http://127.0.0.1:8000/buscar_saludos/", params={"apellido": apellido})
     return response
-
 
 def buscar_saludo_por_id():
     id_input = input("¿Cuál es el ID que deseas buscar? ")
     if id_input.isdigit():  # Verifica que sea un número
-        response = requests.get(f"http://Arcay.pythonanywhere.com/saludos/", params={"id": int(id_input)})
+        response = requests.get(f"http://127.0.0.1:8000/buscar_saludos/", params={"id": int(id_input)})
         return response
     else:
         print("Por favor, ingresa un ID válido.")
         return None
-
 
 def main():
     while True:
@@ -50,8 +46,7 @@ def main():
             saludos = response.json()["saludos"]
             if saludos:
                 for saludo in saludos:
-                    print(
-                        f"ID: {saludo[0]}, Nombre: {saludo[1]}, Apellido: {saludo[2]}, Edad: {saludo[3]}, Saludo: {saludo[4]}")
+                    print(f"ID: {saludo[0]}, Nombre: {saludo[1]}, Apellido: {saludo[2]}, Edad: {saludo[3]}, Saludo: {saludo[4]}")
             else:
                 print("No se encontraron saludos para los criterios proporcionados.")
         elif response:
@@ -62,7 +57,6 @@ def main():
         if otra_busqueda != 's':
             print("Saliendo...")
             break
-
 
 if __name__ == "__main__":
     main()

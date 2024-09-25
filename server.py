@@ -17,7 +17,7 @@ app = FastAPI()
 def init_db():
     conn = sqlite3.connect("saludos.db", check_same_thread=False)
     cursor = conn.cursor()
-    cursor.execute("""
+    cursor.execute(""" 
     CREATE TABLE IF NOT EXISTS saludos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         nombre TEXT,
@@ -72,7 +72,7 @@ async def obtener_saludos():
         conn.close()  # Cerrar la conexión
 
 
-# Endpoint para buscar saludos por nombre
+# Endpoint para buscar saludos por nombre, apellido o ID
 @app.get("/buscar_saludos/")
 async def buscar_saludos(nombre: str = None, apellido: str = None, id: int = None):
     query = "SELECT * FROM saludos WHERE 1=1"
@@ -102,3 +102,9 @@ async def buscar_saludos(nombre: str = None, apellido: str = None, id: int = Non
         return {"saludos": resultados}
     finally:
         conn.close()  # Cerrar la conexión
+
+
+# Usa Uvicorn para servir la aplicación
+if __name__ == "__server__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

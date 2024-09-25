@@ -4,13 +4,12 @@ import requests
 response = requests.get("https://middleware-vl7h.onrender.com/saludos/")  # Asegúrate de usar la URL correcta
 
 if response.status_code == 200:
-    saludos = response.json()["saludos"]
-    print("Respuesta completa:", saludos)  # Imprime la respuesta completa para depurar
+    saludos = response.json().get("saludos", [])  # Cambia esto para acceder a los elementos correctamente
     if saludos:
         print("Saludos almacenados:")
         for saludo in saludos:
-            # Cambia esto para acceder a los elementos correctamente
-            print(f"ID: {saludo['id']}, Nombre: {saludo['nombre']}, Apellido: {saludo['apellido']}, Edad: {saludo['edad']}, Saludo: {saludo['saludo']}")
+            # Acceso a los elementos según la estructura de la respuesta
+            print(f"ID: {saludo[0]}, Nombre: {saludo[1]}, Apellido: {saludo[2]}, Edad: {saludo[3]}, Saludo: {saludo[4]}")
     else:
         print("No hay saludos almacenados.")
 else:

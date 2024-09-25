@@ -7,6 +7,7 @@
 </head>
 <body>
     <h1>Bienvenido a la Aplicación de Saludos</h1>
+
     <h2>Generar Saludo</h2>
     <form action="/saludar/" method="post">
         <input type="text" name="nombre" placeholder="Nombre" required>
@@ -14,6 +15,10 @@
         <input type="number" name="edad" placeholder="Edad" required>
         <button type="submit">Enviar Saludo</button>
     </form>
+
+    {% if saludo %}
+        <h2>{{ saludo }}</h2>
+    {% endif %}
 
     <h2>Ver Todos los Salud</h2>
     <a href="/saludos/">Ver Salud</a>

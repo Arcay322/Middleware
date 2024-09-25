@@ -1,15 +1,15 @@
-from fastapi import FastAPI, HTTPException, Form, Query, Request
+from fastapi import FastAPI, Form, Request, Query, Depends
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
-from typing import List, Optional
-import uvicorn
+from typing import Optional
+import sqlite3
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 
-# Definición del modelo de Saludo
+# Modelo para los saludos
 class Saludo(BaseModel):
     id: int
     nombre: str
@@ -17,79 +17,61 @@ class Saludo(BaseModel):
     edad: int
 
 
-# Base de datos en memoria para los saludos
-saludos_db = []
-current_id = 1  # ID para los saludos
+# Conexión a la base de datos SQLite
+def get_db_connection():
+    conn = sqlite3.connect('saludos.db')
+    conn.row_factory = sqlite3.Row
+    return conn
 
 
+# Ruta para la página principal (formulario de saludo)
 @app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):  # Asegúrate de importar Request
-    return templates.TemplateResponse("index.html", {"request": request})
+async def read_root(request: Request):
+    return templates.TemplateResponse("index.html", {"request": request, "saludo": None})
 
 
+# Ruta para generar un saludo
 @app.post("/saludar/")
-async def saludar(
-        nombre: str = Form(...),
-        apellido: str = Form(...),
-        edad: int = Form(...)
-):
-    global current_id
-    nuevo_saludo = Saludo(id=current_id, nombre=nombre, apellido=apellido, edad=edad)
-    saludos_db.append(nuevo_saludo)
-    current_id += 1
-    return {"mensaje": f"Hola, {nombre} {apellido}! Tienes {edad} años."}
+async def generar_saludo(nombre: str = Form(...), apellido: str = Form(...), edad: int = Form(...)):
+    # Guardar el saludo en la base de datos
+    conn = get_db_connection()
+    conn.execute('INSERT INTO saludos (nombre, apellido, edad) VALUES (?, ?, ?)', (nombre, apellido, edad))
+    conn.commit()
+    conn.close()
+
+    # Generar mensaje de saludo
+    saludo = f"Hola, {nombre} {apellido}! Tienes {edad} años."
+    return templates.TemplateResponse("index.html", {"request": Request, "saludo": saludo})
 
 
-@app.get("/saludos/", response_model=List[Saludo])
+# Ruta para buscar saludos
+@app.get("/buscar_saludos/")
+async def buscar_saludos(nombre: Optional[str] = Query(None), apellido: Optional[str] = Query(None),
+                         id: Optional[int] = Query(None)):
+    conn = get_db_connection()
+    query = "SELECT * FROM saludos WHERE"
+    params = []
+
+    if id is not None:
+        query += " id = ?"
+        params.append(id)
+    elif nombre and apellido:
+        query += " nombre = ? AND apellido = ?"
+        params.extend([nombre, apellido])
+    else:
+        return {"error": "Se debe proporcionar un ID, nombre o apellido."}
+
+    saludos = conn.execute(query, params).fetchall()
+    conn.close()
+
+    return {"saludos": [dict(saludo) for saludo in saludos]}
+
+
+# Ruta para ver todos los saludos
+@app.get("/saludos/")
 async def ver_saludos():
-    return saludos_db
+    conn = get_db_connection()
+    saludos = conn.execute('SELECT * FROM saludos').fetchall()
+    conn.close()
 
-
-@app.get("/buscar_saludos/", response_model=List[Saludo])
-async def buscar_saludos(nombre: Optional[str] = Query(None), apellido: Optional[str] = Query(None),
-                         id: Optional[int] = Query(None)):
-    resultados = []
-
-    if id is not None:
-        for saludo in saludos_db:
-            if saludo.id == id:
-                resultados.append(saludo)
-    elif nombre and apellido:
-        for saludo in saludos_db:
-            if saludo.nombre.lower() == nombre.lower() and saludo.apellido.lower() == apellido.lower():
-                resultados.append(saludo)
-
-    if not resultados:
-        raise HTTPException(status_code=404, detail="Saludo no encontrado")
-
-    return resultados
-
-
-# Ejecutar el servidor
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
-
-
-@app.get("/buscar_saludos/", response_model=List[Saludo])
-async def buscar_saludos(nombre: Optional[str] = Query(None), apellido: Optional[str] = Query(None),
-                         id: Optional[int] = Query(None)):
-    resultados = []
-
-    if id is not None:
-        for saludo in saludos_db:
-            if saludo.id == id:
-                resultados.append(saludo)
-    elif nombre and apellido:
-        for saludo in saludos_db:
-            if saludo.nombre.lower() == nombre.lower() and saludo.apellido.lower() == apellido.lower():
-                resultados.append(saludo)
-
-    if not resultados:
-        raise HTTPException(status_code=404, detail="Saludo no encontrado")
-
-    return resultados
-
-
-# Ejecutar el servidor
-if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    return templates.TemplateResponse("ver_saludos.html", {"saludos": [dict(saludo) for saludo in saludos]})

@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request, Depends, Form
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
@@ -41,8 +41,8 @@ async def read_root(request: Request):
 
 # Endpoint para recibir el saludo
 @app.post("/saludar/")
-async def saludar(nombre: str = Form(...), apellido: str = Form(...), edad: int = Form(...)):
-    mensaje = f"Hola, {nombre} {apellido}! Tienes {edad} años."
+async def saludar(saludo: Saludo):
+    mensaje = f"Hola, {saludo.nombre} {saludo.apellido}! Tienes {saludo.edad} años."
 
     try:
         # Conectar a la base de datos
@@ -51,7 +51,7 @@ async def saludar(nombre: str = Form(...), apellido: str = Form(...), edad: int 
 
         # Guardar en la base de datos
         cursor.execute("INSERT INTO saludos (nombre, apellido, edad, saludo) VALUES (?, ?, ?, ?)",
-                       (nombre, apellido, edad, mensaje))
+                       (saludo.nombre, saludo.apellido, saludo.edad, mensaje))
         conn.commit()
 
         return {"mensaje": mensaje}
@@ -81,13 +81,14 @@ async def buscar_saludos(request: Request, nombre: str = None, apellido: str = N
     query = "SELECT * FROM saludos WHERE 1=1"
     parameters = []
 
+    # Construir la consulta según los parámetros proporcionados
     if nombre:
         query += " AND nombre = ?"
         parameters.append(nombre)
     if apellido:
         query += " AND apellido = ?"
         parameters.append(apellido)
-    if id is not None:
+    if id is not None:  # Solo agregar el ID a la consulta si no es None
         query += " AND id = ?"
         parameters.append(id)
 

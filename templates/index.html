@@ -9,7 +9,7 @@
     <h1>Bienvenido a la Aplicación de Saludos</h1>
 
     <h2>Generar Saludo</h2>
-    <form id="saludo-form">
+    <form action="/saludar/" method="post">
         <input type="text" name="nombre" placeholder="Nombre" required>
         <input type="text" name="apellido" placeholder="Apellido" required>
         <input type="number" name="edad" placeholder="Edad" required>
@@ -17,7 +17,7 @@
     </form>
 
     <h2>Ver Todos los Saludos</h2>
-    <a href="/saludos/">Ver Saludos</a>
+    <a href="/saludos/">Ver Salud</a>
 
     <h2>Buscar Saludo</h2>
     <form action="/buscar_saludos/" method="get">
@@ -26,31 +26,5 @@
         <input type="number" name="id" placeholder="ID">
         <button type="submit">Buscar</button>
     </form>
-
-    <script>
-        document.getElementById('saludo-form').addEventListener('submit', async (e) => {
-            e.preventDefault(); // Evita que el formulario se envíe de la manera tradicional
-
-            const formData = new FormData(e.target); // Obtiene los datos del formulario
-            const data = Object.fromEntries(formData); // Convierte FormData a un objeto
-
-            const response = await fetch('/saludar/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json', // Indica que el cuerpo de la solicitud es JSON
-                },
-                body: JSON.stringify(data), // Convierte el objeto a una cadena JSON
-            });
-
-            if (response.ok) {
-                const result = await response.json(); // Obtiene la respuesta como JSON
-                console.log(result); // Imprime el resultado en la consola
-                alert('Saludo enviado con éxito: ' + result.saludo); // Mensaje de éxito
-            } else {
-                console.error('Error al generar el saludo:', response.statusText); // Maneja errores
-                alert('Error al enviar el saludo.'); // Mensaje de error
-            }
-        });
-    </script>
 </body>
 </html>

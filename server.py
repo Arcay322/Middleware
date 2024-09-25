@@ -29,7 +29,6 @@ async def read_root(request):
 
 @app.post("/saludar/")
 async def saludar(
-        request: HTMLResponse,
         nombre: str = Form(...),
         apellido: str = Form(...),
         edad: int = Form(...)
